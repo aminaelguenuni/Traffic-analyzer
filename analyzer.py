@@ -3,7 +3,6 @@ import pyshark
 import asyncio
 from collections import defaultdict
 
-
 try:
     asyncio.get_event_loop()
 except RuntimeError:
@@ -20,12 +19,12 @@ if __name__ == "__main__":
     file_path = sys.argv[1] #making sure the user has provided a file path 
     print(f"Opening {file_path} ...")
 
-    capture = load_capture(file_path)
+    capture = load_capture(file_path)#open file 
 
     total_count = 0
-    syn_counts = defaultdict(int)
-    ip_to_macs = defaultdict(set)
-    SYN_THRESHOLD = 15
+    syn_counts = defaultdict(int)# a dict where each IP starts at 0
+    ip_to_macs = defaultdict(set)# a dict where each IP maps to a set of MACs
+    SYN_THRESHOLD = 15 #cutoff 
 
     for packet in capture:
         total_count += 1
@@ -46,15 +45,15 @@ if __name__ == "__main__":
 
     findings = []
 
-    for ip, count in syn_counts.items():
+    for ip, count in syn_counts.items(): #checks every IP count against threshold
         if count > SYN_THRESHOLD:
             findings.append(f"[PORT SCAN?] {ip} sent {count} SYN packets with no completed handshake")
 
-    for ip, macs in ip_to_macs.items():
-        if len(macs) > 1:
+    for ip, macs in ip_to_macs.items():#check every IP set of MACs
+        if len(macs) > 1:#more than one MAC claimed that IP: red flag 
             findings.append(f"[ARP SPOOF?] {ip} claimed by multiple MACs: {macs}")
 
-    if findings:
+    if findings:#printing results 
         print("\nSuspicious patterns found:")
         for f in findings:
             print(f)
