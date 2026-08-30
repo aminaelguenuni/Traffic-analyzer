@@ -1,6 +1,9 @@
 import sys
 import pyshark
 import asyncio
+from collections import defaultdict
+
+
 try:
     asyncio.get_event_loop()
 except RuntimeError:
@@ -19,8 +22,43 @@ if __name__ == "__main__":
 
     capture = load_capture(file_path)
 
-    count = 0 #counting the packets in the capture file 
-    for packet in capture:
-        count += 1
+    total_count = 0
+    syn_counts = defaultdict(int)
+    ip_to_macs = defaultdict(set)
+    SYN_THRESHOLD = 15
 
-    print(f"Total packets read: {count}")
+    for packet in capture:
+        total_count += 1
+
+        # port scan check
+        try:
+            if hasattr(packet, 'tcp'):
+                if packet.tcp.flags_syn == '1' and packet.tcp.flags_ack == '0':
+                    syn_counts[packet.ip.src] += 1
+        except AttributeError:
+            pass
+
+        # ARP spoofing check
+        if hasattr(packet, 'arp'):
+            ip_to_macs[packet.arp.src_proto_ipv4].add(packet.arp.src_hw_mac)
+
+    print(f"Total packets read: {total_count}")
+
+    findings = []
+
+    for ip, count in syn_counts.items():
+        if count > SYN_THRESHOLD:
+            findings.append(f"[PORT SCAN?] {ip} sent {count} SYN packets with no completed handshake")
+
+    for ip, macs in ip_to_macs.items():
+        if len(macs) > 1:
+            findings.append(f"[ARP SPOOF?] {ip} claimed by multiple MACs: {macs}")
+
+    if findings:
+        print("\nSuspicious patterns found:")
+        for f in findings:
+            print(f)
+    else:
+        print("\nNo suspicious patterns detected.")
+
+   
