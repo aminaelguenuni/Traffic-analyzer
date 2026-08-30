@@ -1,4 +1,4 @@
-# Network Traffic Analyzer: Wireshark + Python
+# Network Traffic Analyzer: Wireshark and Python
  
 A command-line tool that reads a captured network traffic file (`.pcap`/`.pcapng`) and flags suspicious patterns automatically, so you're not stuck scrolling through thousands of packets in Wireshark trying to spot something manually.
  
